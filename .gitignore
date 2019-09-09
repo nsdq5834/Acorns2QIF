@@ -1,5 +1,3 @@
 .gitignore
-Acorn.txt
-AcornsSecurities.txt
-QuickenSecurities.txt
-REFORM.QIF
+*.txt
+*.QIF
