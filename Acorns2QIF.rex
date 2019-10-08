@@ -1,18 +1,19 @@
 /* Rexx program
    Acorns2QIF.rex
    
-   Base code	02/14/2019
-   Revision 1	02/14/2019
-   Revision 2	02/15/2019
+   Base code    02/14/2019
+   Revision 1   02/14/2019
+   Revision 2   02/15/2019
    Revision 3   02/17/2019
    Revision 4   09/07/2019
+   Revision 5   10/07/2019
 
    This program will be used to read a monthly Acorns report. The report
    originates as a PDF file. We use Acrobat reader to export the file as
    a text file that we can then process as a file object.
 
    Version was a substantial rewrite due to chages in the text file that was
-   being created oute of Adobe Reader. The changes occured in how the buy
+   being created out of Adobe Reader. The changes occured in how the buy
    transactions were being written out to the text file.   
    
 */ 
@@ -24,23 +25,23 @@
    change. 
 */
 
-FormFeed = ""
-Blanks = "     "
+FormFeed = ''
+Blanks = '     '
 lenBlanks = length(Blanks)
 
-SrchStr1 = "Securities Bought"
+SrchStr1 = 'Securities Bought'
 lenSrchStr1 = length(SrchStr1)
 
-SrchStr2 = "Total Securities Bought"
+SrchStr2 = 'Total Securities Bought'
 lenSrchStr2 = length(SrchStr2)
 
-SrchStr3 = "Acorns Securities, LLC — Member FINRA/SIPC"
+SrchStr3 = 'Acorns Securities, LLC — Member FINRA/SIPC'
 lenSrchStr3 = length(SrchStr3)
 
-SrchStr4 = "Bought"
+SrchStr4 = 'Page'
 lenSrchStr4 = length(SrchStr4)
 
-SrchStr5 = "Vanguard FTSE Developed Markets ETF"
+SrchStr5 = 'Vanguard FTSE Developed Markets ETF'
 lenSrchStr5 = length(SrchStr5)
 
 /*
@@ -48,9 +49,9 @@ lenSrchStr5 = length(SrchStr5)
    so that Quicken will recognize the file for import.
 */
 
-say "Input file name:"
+say 'Input file name:'
 pull FileInName
-say "Output file name:"
+say 'Output file name:'
 pull FileOutName
 
 /* Create handles for our input and output files.                            */
@@ -72,8 +73,8 @@ inQuickenSecurities = .stream~new('QuickenSecurities.txt')
 
 /* Open up the security mapping files.                                       */
 
-inAcornSecurities~open("READ")
-inQuickenSecurities~open("READ")
+inAcornSecurities~open('READ')
+inQuickenSecurities~open('READ')
 
 /*
    Read entries from the Acorns Securities file and load them into the
@@ -87,7 +88,7 @@ countAcorns = 0
 do forever
   inBuff=inAcornSecurities~linein
   countAcorns = countAcorns + 1
-  pdfSec.countAcorns = strip(inBuff,"B")
+  pdfSec.countAcorns = strip(inBuff,'B')
 end
 
 endAcorns:
@@ -106,7 +107,7 @@ countQuicken = 0
 do forever
   inBuff=inQuickenSecurities~linein
   countQuicken = countQuicken + 1
-  quiSec.countQuicken = strip(inBuff,"B")
+  quiSec.countQuicken = strip(inBuff,'B')
 end
 
 endQuicken:
@@ -122,19 +123,19 @@ inQuickenSecurities~close
 if countAcorns = countQuicken then
   do
     NumSecurities = countAcorns
-    say "Number of securities that will be mapped is" NumSecurities
+    say 'Number of securities that will be mapped is' NumSecurities
   end
 else
   do
-    say "Number of securities in the mapping files does not match"
-    say "Acorns =" countAcorns "    Quicken =" countQuicken
+    say 'Number of securities in the mapping files does not match'
+    say 'Acorns =' countAcorns '    Quicken =' countQuicken
     exit
   end
   
 /* Open up both the input and output files.                                  */
 
-inTXTfile~open("READ")
-ouQIFfile~open("REPLACE")
+inTXTfile~open('READ')
+ouQIFfile~open('REPLACE')
 
 /* We will use the signal directive to catch any errors and handle them.     */
 
@@ -170,7 +171,7 @@ end
    an issue in the future.
 */
 
-ouQIFfile~lineout("!Type:Invst")
+ouQIFfile~lineout('!Type:Invst')
 
 TransCount = 0
 boolSrchStr5 = 0
@@ -184,15 +185,18 @@ do forever
 */
 
   if substr(inBuff,1,lenSrchStr2) = SrchStr2 then leave
-  if substr(inBuff,1,1) = FormFeed then iterate
-  if substr(inBuff,1,lenBlanks) = Blanks then iterate
+  
+  if substr(inBuff,1,1) = FormFeed | ,
+     substr(inBuff,1,lenBlanks) = Blanks | ,
+     substr(inBuff,1,lenSrchStr4) = SrchStr4 then iterate
+     
   if substr(inBuff,1,lenSrchStr3) = SrchStr3 then
     do
-	  do skipLines = 1 to 10
-	    inBuff=strip(inTXTfile~linein)
-	  end skipLines
-	  iterate
-	end
+      do skipLines = 1 to 10
+        inBuff=strip(inTXTfile~linein)
+      end skipLines
+      iterate
+    end
 
 /*
   Use the builtin verify function to identify dates. We take the conttents of
@@ -204,50 +208,50 @@ do forever
   if verify(inBuff,'0123456789/') = 0 then
   
     do
-      TransDate = "D" || inBuff
-	  inBuff = strip(inTXTfile~linein)
-	  inBuff = strip(inTXTfile~linein)
-	  Security = strip(inTXTfile~linein)
-	  
-	  if substr(Security,1,lenSrchStr5) \= SrchStr5 then
-	  
-	    do
-		  PosLParen = pos("(",Security) - 2
-		  Security = substr(Security,1,PosLparen)
-		end
-	  else
-	    boolSrchStr5 = 1
-		
-	end	
+      TransDate = 'D' || inBuff
+      inBuff = strip(inTXTfile~linein)
+      inBuff = strip(inTXTfile~linein)
+      Security = strip(inTXTfile~linein)
+      
+      if substr(Security,1,lenSrchStr5) \= SrchStr5 then
+      
+        do
+          PosLParen = pos('(',Security) - 2
+          Security = substr(Security,1,PosLparen)
+        end
+      else
+        boolSrchStr5 = 1
+        
+    end 
 
 /* Map the security from the PDF/TXT file to the Quicken recognized security */
 
   do KK = 1 to 6
     if Security = pdfSec.KK then
       Security = quiSec.KK
-  end
+  end KK
   
-  MyBuy = "NBuyx"
-  Security = "Y" || Security
-  myQuantity = "Q" || strip(inTXTfile~linein)
+  MyBuy = 'NBuyx'
+  Security = 'Y' || Security
+  myQuantity = 'Q' || strip(inTXTfile~linein)
   myPrice = strip(inTXTfile~linein)
-  myPrice = "I" || strip(MyPrice,"L","$")
+  myPrice = 'I' || strip(MyPrice,'L','$')
   myAmount = strip(inTXTfile~linein)
-  myAmount1 = "T" || strip(MyAmount,"L","$")
-  myAmount2 = "U" || strip(MyAmount,"L","$")
-  myAmount3 = "$" || strip(MyAmount,"L","$")
+  myAmount1 = 'T' || strip(MyAmount,'L','$')
+  myAmount2 = 'U' || strip(MyAmount,'L','$')
+  myAmount3 = '$' || strip(MyAmount,'L','$')
   
   ouQIFfile~lineout(TransDate)
   ouQIFfile~lineout(MyBuy)
   ouQIFfile~lineout(Security)
   ouQIFfile~lineout(myPrice)
   ouQIFfile~lineout(myQuantity)
-  ouQIFfile~lineout("O$0.00")
-  ouQIFfile~lineout("L[WJM - Acorns-Cash]")
+  ouQIFfile~lineout('O$0.00')
+  ouQIFfile~lineout('L[WJM - Acorns-Cash]')
   ouQIFfile~lineout(myAmount1)
   ouQIFfile~lineout(myAmount2)
   ouQIFfile~lineout(myAmount3)
-  ouQIFfile~lineout("^")
+  ouQIFfile~lineout('^')
 
 /* Execute following only when we detected a line wrap condition earlier in
    our code.
@@ -255,9 +259,9 @@ do forever
    
   if boolSrchStr5 then
     do
-	  inbuff = inTXTfile~linein
-	  boolSrchStr5 = 0
-	end
+      inbuff = inTXTfile~linein
+      boolSrchStr5 = 0
+    end
 
   TransCount = TransCount + 1
  
@@ -265,7 +269,7 @@ end
 
 eofAllDone:
 
-say TransCount "buy transactions were processed."
+say TransCount 'buy transactions were processed.'
 
 inTXTfile~close
 ouQIFfile~close
