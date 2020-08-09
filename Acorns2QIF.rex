@@ -7,6 +7,7 @@
    Revision 3   02/17/2019
    Revision 4   09/07/2019
    Revision 5   10/07/2019
+   Revision 6   07/24/2020
 
    This program will be used to read a monthly Acorns report. The report
    originates as a PDF file. We use Acrobat reader to export the file as
@@ -26,23 +27,52 @@
 */
 
 FormFeed = ''
-Blanks = '     '
+lenFF = length(FormFeed)
+
+Blanks = ' '
 lenBlanks = length(Blanks)
 
-SrchStr1 = 'Securities Bought'
-lenSrchStr1 = length(SrchStr1)
+SS01 = 'Securities Bought'
+lenSS01 = length(SS01)
 
-SrchStr2 = 'Total Securities Bought'
-lenSrchStr2 = length(SrchStr2)
+SS02 = 'Total Securities Bought'
+lenSS02 = length(SS02)
 
-SrchStr3 = 'Acorns Securities, LLC — Member FINRA/SIPC'
-lenSrchStr3 = length(SrchStr3)
+SS03 = 'Acorns Securities, LLC — Member FINRA/SIPC'
+lenSS03 = length(SS03)
 
-SrchStr4 = 'Page'
-lenSrchStr4 = length(SrchStr4)
+SS04 = 'Page'
+lenSS04 = length(SS04)
 
-SrchStr5 = 'Vanguard FTSE Developed Markets ETF'
-lenSrchStr5 = length(SrchStr5)
+SS05 = 'Vanguard FTSE Developed Markets ETF'
+lenSS05 = length(SS05)
+
+SS06 = 'William Meany — Account #211791784702' 
+lenSS06 = length(SS06)
+
+SS07 = 'Transactions' 
+lenSS07 = length(SS07)
+
+SS08 = 'Date'
+lenSS08 = length(SS08)
+ 
+SS09 = 'Settlement Date'
+lenSS09 = length(SS09)
+ 
+SS10 = 'Activity'
+lenSS10 = length(SS10)
+ 
+SS11 = 'Description'
+lenSS11 = length(SS11)
+ 
+SS12 = 'Quantity'
+lenSS12 = length(SS12)
+ 
+SS13 = 'Price'
+lenSS13 = length(SS13)
+ 
+SS14 = 'Amount'
+lenSS14 = length(SS14)
 
 /*
    Get the names of the input/output files.  Output file should be a QIF file
@@ -145,7 +175,7 @@ signal on notready name eofAllDone
 
 do forever
   inBuff=inTXTfile~linein
-  if substr(inBuff,1,lenSrchStr1) = SrchStr1 then leave
+  if substr(inBuff,1,lenSS01) = SS01 then leave
 end
 
 /*
@@ -179,27 +209,41 @@ boolSrchStr5 = 0
 do forever
 
   inBuff=strip(inTXTfile~linein)
+
+/* Look for the end of the bought transactions sections and exit the loop.   */
+  
+    if substr(inBuff,1,lenSS02) = SS02 then leave
   
 /*
-  Use screening statements to process in the bought security data.
+  Use screening statements to process in the bought security data section.
 */
 
-  if substr(inBuff,1,lenSrchStr2) = SrchStr2 then leave
-  
-  if substr(inBuff,1,1) = FormFeed | ,
-     substr(inBuff,1,lenBlanks) = Blanks | ,
-     substr(inBuff,1,lenSrchStr4) = SrchStr4 then iterate
-     
-  if substr(inBuff,1,lenSrchStr3) = SrchStr3 then
+  if substr(inBuff,1,lenSS03) = SS03 then
     do
-      do skipLines = 1 to 10
-        inBuff=strip(inTXTfile~linein)
-      end skipLines
-      iterate
-    end
+
+	  inBuff=inTXTfile~linein
+	  
+	  iterate
+	end
+	
+  if substr(inBuff,1,lenFF) = FormFeed | ,
+     substr(inBuff,1,lenBlanks) = Blanks | ,
+     substr(inBuff,1,lenSS04) = SS04 | ,
+	 substr(inBuff,1,lenSS06) = SS06 | ,
+	 substr(inBuff,1,lenSS07) = SS07 | ,
+	 substr(inBuff,1,lenSS08) = SS08 | ,
+	 substr(inBuff,1,lenSS09) = SS09 | ,
+	 substr(inBuff,1,lenSS10) = SS10 | ,
+	 substr(inBuff,1,lenSS11) = SS11 | ,
+	 substr(inBuff,1,lenSS12) = SS12 | ,
+	 substr(inBuff,1,lenSS13) = SS13 | ,
+	 substr(inBuff,1,lenSS14) = SS14 then
+	 do 
+	  iterate
+	 end 
 
 /*
-  Use the builtin verify function to identify dates. We take the conttents of
+  Use the builtin verify function to identify dates. We take the contents of
   inBuff and chck to be sure the only characters observed are 0123456789 and /
   which would make up a date. If those are the only characters observed the
   function will return 0.
@@ -212,8 +256,7 @@ do forever
       inBuff = strip(inTXTfile~linein)
       inBuff = strip(inTXTfile~linein)
       Security = strip(inTXTfile~linein)
-      
-      if substr(Security,1,lenSrchStr5) \= SrchStr5 then
+      if substr(Security,1,lenSS05) \= SS05 then
       
         do
           PosLParen = pos('(',Security) - 2
@@ -228,7 +271,10 @@ do forever
 
   do KK = 1 to 6
     if Security = pdfSec.KK then
-      Security = quiSec.KK
+	  do
+        Security = quiSec.KK
+	    leave
+	  end
   end KK
   
   MyBuy = 'NBuyx'
@@ -259,7 +305,7 @@ do forever
    
   if boolSrchStr5 then
     do
-      inbuff = inTXTfile~linein
+      inBuff = inTXTfile~linein
       boolSrchStr5 = 0
     end
 
