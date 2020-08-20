@@ -8,6 +8,7 @@
    Revision 4   09/07/2019
    Revision 5   10/07/2019
    Revision 6   07/24/2020
+   Revision 7   08/19/2020
 
    This program will be used to read a monthly Acorns report. The report
    originates as a PDF file. We use Acrobat reader to export the file as
@@ -38,7 +39,7 @@ lenSS01 = length(SS01)
 SS02 = 'Total Securities Bought'
 lenSS02 = length(SS02)
 
-SS03 = 'Acorns Securities, LLC — Member FINRA/SIPC'
+SS03 = 'Acorns Securities, LLC'
 lenSS03 = length(SS03)
 
 SS04 = 'Page'
@@ -47,7 +48,7 @@ lenSS04 = length(SS04)
 SS05 = 'Vanguard FTSE Developed Markets ETF'
 lenSS05 = length(SS05)
 
-SS06 = 'William Meany — Account #211791784702' 
+SS06 = 'William Meany' 
 lenSS06 = length(SS06)
 
 SS07 = 'Transactions' 
@@ -167,16 +168,12 @@ else
 inTXTfile~open('READ')
 ouQIFfile~open('REPLACE')
 
-/* We will use the signal directive to catch any errors and handle them.     */
-
-signal on notready name eofAllDone
-
 /* Loop through the input file looking for the securities bought section     */
 
-do forever
-  inBuff=inTXTfile~linein
-  if substr(inBuff,1,lenSS01) = SS01 then leave
-end
+do label SkipProlog forever
+  inBuff=strip(inTXTfile~linein)
+  if left(inBuff,lenSS01) = SS01 then leave SkipProlog
+end SkipProlog
 
 /*
    Next DO loop isolates only those lines which detail a bought security.
@@ -206,25 +203,27 @@ ouQIFfile~lineout('!Type:Invst')
 TransCount = 0
 boolSrchStr5 = 0
 
-do forever
+do label OuterLoop forever
 
   inBuff=strip(inTXTfile~linein)
+  if inBuff = "" then iterate OuterLoop
 
 /* Look for the end of the bought transactions sections and exit the loop.   */
   
-    if substr(inBuff,1,lenSS02) = SS02 then leave
+    if left(inBuff,lenSS02) = SS02 then leave OuterLoop
   
 /*
   Use screening statements to process in the bought security data section.
 */
 
-  if substr(inBuff,1,lenSS03) = SS03 then
+  if left(inBuff,lenSS03) = SS03 then
     do
-
 	  inBuff=inTXTfile~linein
-	  
-	  iterate
+	  iterate OuterLoop
 	end
+	
+    tempText='AfterSS03 =' inBuff
+    ouDBUfile~lineout(tempText)	
 	
   if substr(inBuff,1,lenFF) = FormFeed | ,
      substr(inBuff,1,lenBlanks) = Blanks | ,
@@ -238,9 +237,7 @@ do forever
 	 substr(inBuff,1,lenSS12) = SS12 | ,
 	 substr(inBuff,1,lenSS13) = SS13 | ,
 	 substr(inBuff,1,lenSS14) = SS14 then
-	 do 
-	  iterate
-	 end 
+	   iterate OuterLoop
 
 /*
   Use the builtin verify function to identify dates. We take the contents of
@@ -256,15 +253,14 @@ do forever
       inBuff = strip(inTXTfile~linein)
       inBuff = strip(inTXTfile~linein)
       Security = strip(inTXTfile~linein)
-      if substr(Security,1,lenSS05) \= SS05 then
-      
+	  
+      if substr(Security,1,lenSS05) \= SS05 then      
         do
           PosLParen = pos('(',Security) - 2
           Security = substr(Security,1,PosLparen)
         end
       else
-        boolSrchStr5 = 1
-        
+        boolSrchStr5 = 1        
     end 
 
 /* Map the security from the PDF/TXT file to the Quicken recognized security */
@@ -273,7 +269,7 @@ do forever
     if Security = pdfSec.KK then
 	  do
         Security = quiSec.KK
-	    leave
+	    leave KK
 	  end
   end KK
   
@@ -311,7 +307,7 @@ do forever
 
   TransCount = TransCount + 1
  
-end
+end OuterLoop
 
 eofAllDone:
 
