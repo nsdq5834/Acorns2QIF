@@ -9,6 +9,7 @@
    Revision 5   10/07/2019
    Revision 6   07/24/2020
    Revision 7   08/19/2020
+   Revision 8   08/23/2020
 
    This program will be used to read a monthly Acorns report. The report
    originates as a PDF file. We use Acrobat reader to export the file as
@@ -205,6 +206,8 @@ boolSrchStr5 = 0
 
 do label OuterLoop forever
 
+/* Skip any null lines in the file                                           */
+
   inBuff=strip(inTXTfile~linein)
   if inBuff = "" then iterate OuterLoop
 
@@ -222,21 +225,18 @@ do label OuterLoop forever
 	  iterate OuterLoop
 	end
 	
-    tempText='AfterSS03 =' inBuff
-    ouDBUfile~lineout(tempText)	
-	
-  if substr(inBuff,1,lenFF) = FormFeed | ,
-     substr(inBuff,1,lenBlanks) = Blanks | ,
-     substr(inBuff,1,lenSS04) = SS04 | ,
-	 substr(inBuff,1,lenSS06) = SS06 | ,
-	 substr(inBuff,1,lenSS07) = SS07 | ,
-	 substr(inBuff,1,lenSS08) = SS08 | ,
-	 substr(inBuff,1,lenSS09) = SS09 | ,
-	 substr(inBuff,1,lenSS10) = SS10 | ,
-	 substr(inBuff,1,lenSS11) = SS11 | ,
-	 substr(inBuff,1,lenSS12) = SS12 | ,
-	 substr(inBuff,1,lenSS13) = SS13 | ,
-	 substr(inBuff,1,lenSS14) = SS14 then
+  if left(inBuff,lenFF) = FormFeed | ,
+     left(inBuff,lenBlanks) = Blanks | ,
+     left(inBuff,lenSS04) = SS04 | ,
+	 left(inBuff,lenSS06) = SS06 | ,
+	 left(inBuff,lenSS07) = SS07 | ,
+	 left(inBuff,lenSS08) = SS08 | ,
+	 left(inBuff,lenSS09) = SS09 | ,
+	 left(inBuff,lenSS10) = SS10 | ,
+	 left(inBuff,lenSS11) = SS11 | ,
+	 left(inBuff,lenSS12) = SS12 | ,
+	 left(inBuff,lenSS13) = SS13 | ,
+	 left(inBuff,lenSS14) = SS14 then
 	   iterate OuterLoop
 
 /*
@@ -254,7 +254,7 @@ do label OuterLoop forever
       inBuff = strip(inTXTfile~linein)
       Security = strip(inTXTfile~linein)
 	  
-      if substr(Security,1,lenSS05) \= SS05 then      
+      if left(Security,lenSS05) \= SS05 then      
         do
           PosLParen = pos('(',Security) - 2
           Security = substr(Security,1,PosLparen)
